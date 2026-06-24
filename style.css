@@ -1,0 +1,347 @@
+/* style.css - تصميم زجاجي أبيض ثلجي فاخر */
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Cairo', sans-serif;
+  background: linear-gradient(135deg, #f9fcff 0%, #f2f6fc 100%);
+  min-height: 100vh;
+  color: #1a1a1a;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ========== عناصر زجاجية أساسية ========== */
+.glass,
+.card,
+.login-card,
+.modal-content,
+.sidebar,
+.question-block,
+table {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.03), 0 0 0 1px rgba(255, 255, 255, 0.4);
+}
+
+/* بطاقات المحتوى */
+.card {
+  border-radius: 24px;
+  padding: 30px;
+  margin-bottom: 24px;
+}
+
+.card h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: #0a1a2e;
+}
+
+/* ========== صفحة تسجيل الدخول ========== */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 48px 32px;
+  border-radius: 32px;
+  text-align: center;
+}
+
+.logo {
+  font-size: 40px;
+  margin-bottom: 8px;
+}
+
+.login-card h2 {
+  font-size: 26px;
+  margin-bottom: 32px;
+  color: #0a1a2e;
+  font-weight: 700;
+}
+
+/* مجموعات الإدخال */
+.form-group {
+  margin-bottom: 22px;
+  text-align: right;
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  color: #1a1a1a;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  font-size: 15px;
+  font-family: 'Cairo', sans-serif;
+  color: #111;
+  transition: none; /* لا حركات */
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #2a5298;
+  box-shadow: 0 0 0 3px rgba(42, 82, 152, 0.06);
+}
+
+/* أزرار */
+.btn,
+button {
+  background: #1e3c72;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Cairo', sans-serif;
+  cursor: pointer;
+  transition: none; /* لا حركات */
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1;
+}
+
+.btn:hover,
+button:hover {
+  background: #2a5298;
+}
+
+.btn-danger { background: #e74c3c; }
+.btn-danger:hover { background: #c0392b; }
+.btn-success { background: #27ae60; }
+.btn-success:hover { background: #1e8449; }
+.btn-warning { background: #f39c12; color: #111; }
+.btn-warning:hover { background: #d68910; }
+
+.btn-login {
+  width: 100%;
+  padding: 16px;
+  background: #1e3c72;
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  border-radius: 16px;
+  margin-top: 12px;
+}
+
+.btn-login:hover {
+  background: #2a5298;
+}
+
+/* رسائل الخطأ */
+.error-message {
+  color: #e74c3c;
+  margin-top: 16px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* ========== تخطيط لوحات التحكم ========== */
+.admin-wrapper,
+.school-wrapper,
+.teacher-wrapper,
+.student-wrapper {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* الشريط الجانبي */
+.sidebar {
+  width: 270px;
+  padding: 30px 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: none;
+}
+
+.sidebar h3 {
+  text-align: center;
+  margin-bottom: 36px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1e3c72;
+  padding: 0 20px;
+}
+
+.sidebar a {
+  color: #1a1a1a;
+  text-decoration: none;
+  padding: 14px 24px;
+  margin: 4px 16px;
+  border-radius: 14px;
+  font-weight: 500;
+  display: block;
+  transition: none; /* لا حركات */
+  border-right: 4px solid transparent;
+}
+
+.sidebar a:hover {
+  background: rgba(30, 60, 114, 0.05);
+  color: #1e3c72;
+  border-right-color: #1e3c72;
+}
+
+.sidebar a.active {
+  background: rgba(30, 60, 114, 0.08);
+  color: #1e3c72;
+  border-right-color: #ffcc00;
+  font-weight: 700;
+}
+
+/* منطقة المحتوى */
+.content {
+  flex: 1;
+  padding: 30px 40px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  overflow-y: auto;
+}
+
+/* التبويبات */
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* ========== الجداول ========== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+th {
+  background: rgba(30, 60, 114, 0.04);
+  padding: 16px;
+  font-weight: 700;
+  color: #0a1a2e;
+  text-align: center;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+td {
+  padding: 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+  text-align: center;
+  color: #1a1a1a;
+  font-size: 14px;
+}
+
+tr:hover td {
+  background: rgba(30, 60, 114, 0.015);
+}
+
+/* ========== النوافذ المنبثقة (مودال) ========== */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  margin: 6% auto;
+  padding: 36px;
+  border-radius: 28px;
+  width: 90%;
+  max-width: 640px;
+  max-height: 80vh;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+}
+
+.modal-content h3 {
+  font-size: 22px;
+  margin-bottom: 24px;
+  color: #0a1a2e;
+  font-weight: 700;
+}
+
+/* ========== كتل الأسئلة ========== */
+.question-block {
+  border-radius: 18px;
+  padding: 20px;
+  margin: 12px 0;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+/* ========== عناصر إضافية ========== */
+.timer {
+  font-size: 22px;
+  font-weight: 700;
+  color: #e74c3c;
+  background: rgba(231, 76, 60, 0.08);
+  padding: 6px 18px;
+  border-radius: 14px;
+  display: inline-block;
+}
+
+.lock-icon {
+  font-size: 20px;
+}
+
+.downloaded {
+  color: #27ae60;
+  font-weight: 700;
+  margin-right: 10px;
+}
+
+.flex-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.flex-row > * {
+  flex: 1 1 200px;
+}
+
+/* ========== تحسينات للهواتف ========== */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 220px;
+  }
+  .content {
+    padding: 20px;
+  }
+}
