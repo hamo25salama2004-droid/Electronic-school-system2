@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>لوحة الطالب</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .student-wrapper { display: flex; min-height: 100vh; background: #f0f2f5; }
+    .sidebar {
+      width: 250px; background: #1e3c72; color: white;
+      padding: 20px 0; display: flex; flex-direction: column;
+    }
+    .sidebar h3 { text-align: center; margin-bottom: 20px; font-size: 20px; }
+    .sidebar a {
+      color: #ccc; text-decoration: none; padding: 12px 20px;
+      margin: 5px 0; display: block; transition: 0.3s;
+      border-right: 4px solid transparent;
+    }
+    .sidebar a:hover, .sidebar a.active {
+      background: #2a5298; color: white; border-right-color: #ffcc00;
+    }
+    .content { flex: 1; padding: 25px; overflow-y: auto; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .card {
+      background: white; border-radius: 12px; padding: 25px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px;
+    }
+    .btn {
+      background: #2a5298; color: white; border: none;
+      padding: 10px 20px; border-radius: 8px; cursor: pointer;
+      font-size: 14px; margin: 5px;
+    }
+    .btn-danger { background: #e74c3c; }
+    .btn-success { background: #27ae60; }
+    .btn-warning { background: #f39c12; color: white; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; }
+    th { background: #f8f9fa; font-weight: 600; }
+    .modal {
+      display: none; position: fixed; z-index: 1000;
+      left:0; top:0; width:100%; height:100%; background: rgba(0,0,0,0.4);
+    }
+    .modal-content {
+      background: white; margin: 3% auto; padding: 25px;
+      border-radius: 12px; width: 90%; max-width: 700px;
+      max-height: 80vh; overflow-y: auto;
+    }
+    .question-block {
+      background: #f8f9fa; border-radius: 8px; padding: 15px; margin: 10px 0;
+      border: 1px solid #ddd;
+    }
+    .timer { font-size: 20px; font-weight: bold; color: #e74c3c; }
+    .lock-icon { font-size: 20px; }
+    .downloaded { color: #27ae60; font-weight: bold; margin-right: 10px; }
+  </style>
+</head>
+<body>
+<div class="student-wrapper">
+  <div class="sidebar">
+    <h3>🎒 <span id="studentNameDisplay">طالب</span></h3>
+    <a href="#" class="tab-link active" data-tab="home">🏠 الرئيسية</a>
+    <a href="#" class="tab-link" data-tab="results">📊 النتيجة</a>
+    <a href="#" class="tab-link" data-tab="materials">📚 المقررات</a>
+    <a href="#" class="tab-link" data-tab="exams">📝 الاختبارات</a>
+    <a href="#" class="tab-link" data-tab="schedules">📅 الجداول</a>
+    <a href="#" class="tab-link" data-tab="profile">👤 بياناتي</a>
+    <a href="#" onclick="logout()" style="margin-top: auto;">🚪 تسجيل الخروج</a>
+  </div>
+
+  <div class="content">
+    <!-- الصفحة الرئيسية -->
+    <div id="home" class="tab-content active">
+      <div class="card">
+        <h2>مرحباً، <span id="homeName"></span></h2>
+        <p>الكود: <strong id="homeCode"></strong></p>
+        <p>الصف: <strong id="homeClass"></strong> - الترم: <strong id="homeTerm"></strong></p>
+        <button class="btn" onclick="showSeatNumber()">🪑 إظهار رقم الجلوس</button>
+        <div id="seatInfo" style="margin-top:15px; display:none;">
+          <p>رقم الجلوس: <strong id="seatNumber"></strong></p>
+          <p>اللجنة / المكان: <strong id="seatRoom"></strong></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- النتيجة -->
+    <div id="results" class="tab-content">
+      <div class="card">
+        <h2>النتائج</h2>
+        <table id="resultsTable">
+          <thead><tr><th>الاختبار</th><th>الدرجة</th><th>تاريخ التقديم</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- المقررات الدراسية -->
+    <div id="materials" class="tab-content">
+      <div class="card">
+        <h2>المقررات الدراسية</h2>
+        <div id="materialsList"></div>
+      </div>
+    </div>
+
+    <!-- الاختبارات -->
+    <div id="exams" class="tab-content">
+      <div class="card">
+        <h2>الاختبارات المتاحة</h2>
+        <table id="examsTable">
+          <thead><tr><th>العنوان</th><th>النوع</th><th>يبدأ</th><th>ينتهي</th><th>المدة</th><th>دخول</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- الجداول -->
+    <div id="schedules" class="tab-content">
+      <div class="card">
+        <h2>جدول الحصص والامتحانات</h2>
+        <div id="scheduleContent">جاري التحميل...</div>
+      </div>
+    </div>
+
+    <!-- بياناتي -->
+    <div id="profile" class="tab-content">
+      <div class="card">
+        <h2>بياناتي</h2>
+        <div id="profileContent">جاري التحميل...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- مودال بدء الاختبار -->
+<div id="examModal" class="modal">
+  <div class="modal-content">
+    <h3 id="examTitleDisplay"></h3>
+    <p>المدة المتبقية: <span class="timer" id="timerDisplay"></span></p>
+    <form id="examForm">
+      <div id="examQuestionsContainer"></div>
+      <button type="button" class="btn btn-success" onclick="submitExam()">تسليم الاختبار</button>
+      <button type="button" class="btn btn-danger" onclick="closeExamModal()">إغلاق</button>
+    </form>
+    <div id="examResult" style="display:none; margin-top:20px;"></div>
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script>
+// التحقق من الجلسة
+if (!localStorage.getItem('token') || localStorage.getItem('role') !== 'student') {
+  window.location.href = 'login.html';
+}
+const studentCode = localStorage.getItem('code');
+const schoolCode = localStorage.getItem('school_code');
+const studentName = localStorage.getItem('studentName');
+const studentClass = localStorage.getItem('class');
+const studentTerm = localStorage.getItem('term');
+document.getElementById('studentNameDisplay').textContent = studentName;
+document.getElementById('homeName').textContent = studentName;
+document.getElementById('homeCode').textContent = studentCode;
+document.getElementById('homeClass').textContent = studentClass;
+document.getElementById('homeTerm').textContent = studentTerm;
+
+// التنقل بين التبويبات
+document.querySelectorAll('.tab-link').forEach(link => {
+  link.addEventListener('click', function(e) {
+    e.preventDefault();
+    document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
+    this.classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById(this.dataset.tab).classList.add('active');
+    const tab = this.dataset.tab;
+    if (tab === 'results') loadResults();
+    else if (tab === 'materials') loadMaterials();
+    else if (tab === 'exams') loadExams();
+    else if (tab === 'schedules') loadSchedules();
+    else if (tab === 'profile') loadProfile();
+  });
+});
+
+// ====================== الرئيسية ======================
+async function showSeatNumber() {
+  const res = await apiCall({ action: 'getStudentDashboard', student_code: studentCode });
+  if (res.seat) {
+    document.getElementById('seatNumber').textContent = res.seat;
+    document.getElementById('seatRoom').textContent = res.room;
+    document.getElementById('seatInfo').style.display = 'block';
+  } else {
+    alert('رقم الجلوس غير متوفر حالياً');
+  }
+}
+
+// ====================== النتيجة ======================
+async function loadResults() {
+  const res = await apiCall({ action: 'getStudentResults', student_code: studentCode });
+  const tbody = document.querySelector('#resultsTable tbody');
+  tbody.innerHTML = '';
+  if (res.results) {
+    res.results.forEach(r => {
+      tbody.innerHTML += `<tr>
+        <td>اختبار ${r.exam_id}</td>
+        <td>${r.score !== undefined ? r.score : 'لم يصحح بعد'}</td>
+        <td>${r.submitted ? new Date(r.submitted).toLocaleString('ar-EG') : ''}</td>
+      </tr>`;
+    });
+  }
+}
+
+// ====================== المقررات ======================
+async function loadMaterials() {
+  const res = await apiCall({ action: 'getMaterialsForStudent', student_code: studentCode });
+  const container = document.getElementById('materialsList');
+  container.innerHTML = '';
+  if (res.materials && res.materials.length > 0) {
+    // تجميع حسب المادة
+    const subjects = {};
+    res.materials.forEach(m => {
+      if (!subjects[m.subject]) subjects[m.subject] = [];
+      subjects[m.subject].push(m);
+    });
+    for (let subj in subjects) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `<h3>${subj}</h3>`;
+      const list = document.createElement('ul');
+      subjects[subj].forEach(ch => {
+        const li = document.createElement('li');
+        li.style.margin = '10px 0';
+        const downloaded = localStorage.getItem(`downloaded_${ch.file_url}`);
+        const downloadMark = downloaded ? '<span class="downloaded">✅ تم التحميل</span>' : '';
+        if (!ch.is_locked) {
+          li.innerHTML = `${ch.chapter} <a href="${ch.file_url}" target="_blank" class="btn" onclick="markDownloaded('${ch.file_url}')">تحميل</a> ${downloadMark}`;
+        } else {
+          li.innerHTML = `${ch.chapter} <span class="lock-icon">🔒</span> (مقفل)`;
+        }
+        list.appendChild(li);
+      });
+      card.appendChild(list);
+      container.appendChild(card);
+    }
+  } else {
+    container.innerHTML = '<p>لا توجد مواد حالياً.</p>';
+  }
+}
+
+function markDownloaded(url) {
+  localStorage.setItem(`downloaded_${url}`, 'true');
+  loadMaterials(); // تحديث العرض
+}
+
+// ====================== الاختبارات ======================
+async function loadExams() {
+  const res = await apiCall({ action: 'getExamsForStudent', student_code: studentCode });
+  const tbody = document.querySelector('#examsTable tbody');
+  tbody.innerHTML = '';
+  if (res.exams) {
+    res.exams.forEach(ex => {
+      const now = new Date();
+      const start = new Date(ex.start);
+      const end = new Date(ex.end);
+      const canEnter = now >= start && now <= end;
+      tbody.innerHTML += `<tr>
+        <td>${ex.title}</td>
+        <td>${ex.type}</td>
+        <td>${start.toLocaleString('ar-EG')}</td>
+        <td>${end.toLocaleString('ar-EG')}</td>
+        <td>${ex.duration} دقيقة</td>
+        <td>${canEnter ? `<button class="btn" onclick="enterExam(${ex.id}, '${ex.title}', ${ex.duration})">دخول</button>` : 'غير متاح'}</td>
+      </tr>`;
+    });
+  }
+}
+
+let currentExamId = null;
+let timerInterval = null;
+let examEndTime = null;
+
+async function enterExam(examId, title, duration) {
+  currentExamId = examId;
+  document.getElementById('examTitleDisplay').textContent = title;
+  const res = await apiCall({ action: 'getExamQuestionsForStudent', exam_id: examId });
+  const container = document.getElementById('examQuestionsContainer');
+  container.innerHTML = '';
+  if (res.questions) {
+    res.questions.forEach((q, idx) => {
+      const block = document.createElement('div');
+      block.className = 'question-block';
+      let inputHtml = '';
+      if (q.type === 'mcq') {
+        inputHtml = q.options.map(opt => `
+          <label><input type="radio" name="q_${q.id}" value="${opt}"> ${opt}</label><br>
+        `).join('');
+      } else if (q.type === 'tf') {
+        inputHtml = `
+          <label><input type="radio" name="q_${q.id}" value="صح"> صح</label>
+          <label><input type="radio" name="q_${q.id}" value="خطأ"> خطأ</label>
+        `;
+      } else if (q.type === 'essay') {
+        inputHtml = `<textarea name="q_${q.id}" rows="3" style="width:100%"></textarea>`;
+      }
+      block.innerHTML = `<p><strong>${idx+1}. ${q.text}</strong> (${q.points} نقطة)</p>${inputHtml}`;
+      container.appendChild(block);
+    });
+  }
+  // ضبط المؤقت
+  const now = new Date();
+  examEndTime = new Date(now.getTime() + duration * 60000);
+  document.getElementById('examModal').style.display = 'block';
+  document.getElementById('examResult').style.display = 'none';
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    const now = new Date();
+    const diff = examEndTime - now;
+    if (diff <= 0) {
+      clearInterval(timerInterval);
+      document.getElementById('timerDisplay').textContent = 'انتهى الوقت';
+      submitExam(); // تسليم تلقائي
+      return;
+    }
+    const mins = Math.floor(diff / 60000);
+    const secs = Math.floor((diff % 60000) / 1000);
+    document.getElementById('timerDisplay').textContent = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  }, 1000);
+}
+
+async function submitExam() {
+  if (!currentExamId) return;
+  clearInterval(timerInterval);
+  const answers = [];
+  const questionBlocks = document.querySelectorAll('#examQuestionsContainer .question-block');
+  questionBlocks.forEach(block => {
+    const radioChecked = block.querySelector('input[type="radio"]:checked');
+    const textarea = block.querySelector('textarea');
+    const inputName = radioChecked ? radioChecked.name : (textarea ? textarea.name : null);
+    if (!inputName) return;
+    const questionId = inputName.split('_')[1];
+    const answer = radioChecked ? radioChecked.value : (textarea ? textarea.value : '');
+    answers.push({ question_id: parseInt(questionId), answer: answer });
+  });
+  const data = {
+    student_code: studentCode,
+    exam_id: currentExamId,
+    answers: answers
+  };
+  const res = await apiCall({ action: 'submitExam', data: JSON.stringify(data) });
+  if (res.success) {
+    document.getElementById('examResult').style.display = 'block';
+    document.getElementById('examResult').innerHTML = `<h4>تم التسليم! درجتك: ${res.score}</h4>`;
+  } else {
+    alert('فشل التسليم');
+  }
+  currentExamId = null;
+  document.getElementById('examQuestionsContainer').innerHTML = '';
+}
+
+function closeExamModal() {
+  clearInterval(timerInterval);
+  document.getElementById('examModal').style.display = 'none';
+  currentExamId = null;
+}
+
+// ====================== الجداول ======================
+async function loadSchedules() {
+  const container = document.getElementById('scheduleContent');
+  container.innerHTML = 'جاري التحميل...';
+  let html = '';
+  for (let term = 1; term <= 2; term++) {
+    const res = await apiCall({ action: 'getSchedule', school_code: schoolCode, class: studentClass, term: term });
+    if (res.schedules && res.schedules.length > 0) {
+      res.schedules.forEach(s => {
+        html += `<p>الترم ${term}: `;
+        html += s.schedule_file ? `<a href="${s.schedule_file}" target="_blank">📅 جدول الحصص</a> ` : '';
+        html += s.exam_schedule ? `<a href="${s.exam_schedule}" target="_blank">📝 جدول الامتحان</a>` : '';
+        html += `</p>`;
+      });
+    } else {
+      html += `<p>الترم ${term}: لا توجد جداول مرفوعة.</p>`;
+    }
+  }
+  container.innerHTML = html;
+}
+
+// ====================== بياناتي ======================
+async function loadProfile() {
+  const res = await apiCall({ action: 'getStudentFullInfo', student_code: studentCode });
+  const container = document.getElementById('profileContent');
+  if (res.error) {
+    container.innerHTML = '<p>تعذر تحميل البيانات.</p>';
+    return;
+  }
+  container.innerHTML = `
+    <p><strong>الاسم:</strong> ${res.name}</p>
+    <p><strong>الكود:</strong> ${studentCode}</p>
+    <p><strong>الصف:</strong> ${res.class}</p>
+    <p><strong>الترم:</strong> ${res.term}</p>
+    <p><strong>تاريخ الميلاد:</strong> ${res.birthdate || 'غير محدد'}</p>
+    <p><strong>الجنس:</strong> ${res.gender || 'غير محدد'}</p>
+    <p><strong>الهاتف:</strong> ${res.phone || 'غير محدد'}</p>
+    <p><strong>العنوان:</strong> ${res.address || 'غير محدد'}</p>
+  `;
+}
+
+// ====================== عام ======================
+function logout() {
+  localStorage.clear();
+  window.location.href = 'login.html';
+}
+
+// التحميل الأولي
+loadMaterials(); // اختياري، لكن لن يظهر حتى ينقر التبويب
+</script>
+</body>
+</html>
