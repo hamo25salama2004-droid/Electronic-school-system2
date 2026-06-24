@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>لوحة تحكم الأدمن</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* تنسيقات إضافية للإدارة */
+    .admin-wrapper { display: flex; min-height: 100vh; background: #f0f2f5; }
+    .sidebar {
+      width: 250px; background: #1e3c72; color: white;
+      padding: 20px 0; display: flex; flex-direction: column;
+    }
+    .sidebar h3 { text-align: center; margin-bottom: 30px; font-size: 22px; }
+    .sidebar a {
+      color: #ccc; text-decoration: none; padding: 12px 20px;
+      margin: 5px 0; display: block; transition: 0.3s;
+    }
+    .sidebar a:hover, .sidebar a.active {
+      background: #2a5298; color: white; border-right: 4px solid #ffcc00;
+    }
+    .content { flex: 1; padding: 30px; overflow-y: auto; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .card {
+      background: white; border-radius: 12px; padding: 25px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px;
+    }
+    .btn {
+      background: #2a5298; color: white; border: none;
+      padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px;
+    }
+    .btn-danger { background: #e74c3c; }
+    .btn-success { background: #27ae60; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; }
+    th { background: #f8f9fa; font-weight: 600; }
+    .modal {
+      display: none; position: fixed; z-index: 1000;
+      left:0; top:0; width:100%; height:100%; background: rgba(0,0,0,0.4);
+    }
+    .modal-content {
+      background: white; margin: 5% auto; padding: 25px;
+      border-radius: 12px; width: 90%; max-width: 500px;
+    }
+    input, select { width: 100%; padding: 10px; margin: 10px 0; border-radius: 8px; border: 1px solid #ddd; }
+  </style>
+</head>
+<body>
+<div class="admin-wrapper">
+  <div class="sidebar">
+    <h3>🏫 المدير العام</h3>
+    <a href="#" class="tab-link active" data-tab="schools">📋 إدارة المدارس</a>
+    <a href="#" class="tab-link" data-tab="packages">💼 إدارة الباقات</a>
+    <a href="#" class="tab-link" data-tab="subscriptions">🔄 الاشتراكات</a>
+    <a href="#" onclick="logout()" style="margin-top: auto;">🚪 تسجيل الخروج</a>
+  </div>
+  <div class="content">
+    <!-- تبويب المدارس -->
+    <div id="schools" class="tab-content active">
+      <div class="card">
+        <h2>قائمة المدارس</h2>
+        <button class="btn" onclick="openAddSchool()">➕ إضافة مدرسة جديدة</button>
+        <table id="schoolsTable">
+          <thead><tr><th>الاسم</th><th>الكود</th><th>الباقة</th><th>الحالة</th><th>تاريخ الانتهاء</th><th>إجراءات</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <!-- تبويب الباقات -->
+    <div id="packages" class="tab-content">
+      <div class="card">
+        <h2>الباقات المتاحة</h2>
+        <button class="btn" onclick="openAddPackage()">➕ إضافة باقة</button>
+        <table id="packagesTable">
+          <thead><tr><th>اسم الباقة</th><th>الحد الأقصى للطلاب</th><th>السعر السنوي (جنيه)</th><th>إجراءات</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <!-- تبويب الاشتراكات -->
+    <div id="subscriptions" class="tab-content">
+      <div class="card">
+        <h2>إدارة اشتراكات المدارس</h2>
+        <table id="subTable">
+          <thead><tr><th>المدرسة</th><th>الكود</th><th>الباقة</th><th>بداية الاشتراك</th><th>نهاية الاشتراك</th><th>الحالة</th><th>تجديد/إلغاء</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- مودال إضافة/تعديل مدرسة -->
+<div id="schoolModal" class="modal">
+  <div class="modal-content">
+    <h3 id="modalTitle">إضافة مدرسة</h3>
+    <input type="hidden" id="editCode">
+    <label>اسم المدرسة</label>
+    <input type="text" id="schoolName" placeholder="الاسم">
+    <label>الباقة</label>
+    <select id="schoolPackage"></select>
+    <label>مدة الاشتراك (بالشهور)</label>
+    <input type="number" id="duration" value="12" min="1" max="12">
+    <label>البريد الإلكتروني (اختياري)</label>
+    <input type="email" id="schoolEmail" placeholder="email@example.com">
+    <button class="btn" onclick="saveSchool()">حفظ</button>
+    <button class="btn btn-danger" onclick="closeModal()">إلغاء</button>
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script>
+// التحقق من تسجيل الدخول
+if (!localStorage.getItem('token') || localStorage.getItem('role') !== 'admin') {
+  window.location.href = 'login.html';
+}
+
+// التنقل بين التبويبات
+document.querySelectorAll('.tab-link').forEach(link => {
+  link.addEventListener('click', function(e) {
+    e.preventDefault();
+    document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
+    this.classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById(this.dataset.tab).classList.add('active');
+    if (this.dataset.tab === 'schools') loadSchools();
+    if (this.dataset.tab === 'packages') loadPackages();
+    if (this.dataset.tab === 'subscriptions') loadSubscriptions();
+  });
+});
+
+// ========== وظائف المدارس ==========
+async function loadSchools() {
+  let res = await apiCall({ action: 'getSchools' });
+  let tbody = document.querySelector('#schoolsTable tbody');
+  tbody.innerHTML = '';
+  if (res.schools) {
+    res.schools.forEach(s => {
+      tbody.innerHTML += `<tr>
+        <td>${s.name}</td><td>${s.code}</td><td>${s.package}</td>
+        <td>${s.status === 'active' ? '✅ نشط' : '❌ غير نشط'}</td>
+        <td>${s.subEnd || ''}</td>
+        <td>
+          <button class="btn" onclick="editSchool('${s.code}')">✏️</button>
+          <button class="btn btn-danger" onclick="deleteSchool('${s.code}')">🗑️</button>
+        </td>
+      </tr>`;
+    });
+  }
+}
+
+async function openAddSchool() {
+  document.getElementById('modalTitle').textContent = 'إضافة مدرسة جديدة';
+  document.getElementById('editCode').value = '';
+  document.getElementById('schoolName').value = '';
+  document.getElementById('duration').value = 12;
+  document.getElementById('schoolEmail').value = '';
+  await loadPackagesIntoSelect();
+  document.getElementById('schoolModal').style.display = 'block';
+}
+
+async function editSchool(code) {
+  let res = await apiCall({ action: 'getSchools' });
+  let school = res.schools.find(s => s.code === code);
+  if (!school) return;
+  document.getElementById('modalTitle').textContent = 'تعديل بيانات المدرسة';
+  document.getElementById('editCode').value = school.code;
+  document.getElementById('schoolName').value = school.name;
+  document.getElementById('duration').value = 12;
+  document.getElementById('schoolEmail').value = school.email || '';
+  await loadPackagesIntoSelect(school.package);
+  document.getElementById('schoolModal').style.display = 'block';
+}
+
+async function saveSchool() {
+  let code = document.getElementById('editCode').value;
+  let name = document.getElementById('schoolName').value;
+  let pkg = document.getElementById('schoolPackage').value;
+  let duration = document.getElementById('duration').value;
+  let email = document.getElementById('schoolEmail').value;
+  if (!name || !pkg) return alert('الرجاء ملء الحقول المطلوبة');
+  
+  if (code) {
+    // تعديل
+    let res = await apiCall({ action: 'updateSchool', data: JSON.stringify({code, name, package: pkg, email, status: undefined}) });
+    if (res.success) alert('تم التحديث');
+  } else {
+    // إضافة
+    let res = await apiCall({ action: 'addSchool', data: JSON.stringify({name, package: pkg, duration_months: duration}) });
+    if (res.success) {
+      alert('تم إنشاء المدرسة والكود: ' + res.code);
+    }
+  }
+  closeModal();
+  loadSchools();
+}
+
+async function deleteSchool(code) {
+  if (confirm('هل أنت متأكد من حذف المدرسة؟')) {
+    let res = await apiCall({ action: 'deleteSchool', code: code });
+    if (res.success) loadSchools();
+  }
+}
+
+function closeModal() {
+  document.getElementById('schoolModal').style.display = 'none';
+}
+
+async function loadPackagesIntoSelect(selected) {
+  let res = await apiCall({ action: 'getPackages' });
+  let select = document.getElementById('schoolPackage');
+  select.innerHTML = '';
+  if (res.packages) {
+    res.packages.forEach(p => {
+      let opt = document.createElement('option');
+      opt.value = p.name;
+      opt.textContent = `${p.name} (حتى ${p.max} طالب - ${p.price} ج)`;
+      if (p.name === selected) opt.selected = true;
+      select.appendChild(opt);
+    });
+  }
+}
+
+// ========== إدارة الباقات ==========
+async function loadPackages() {
+  let res = await apiCall({ action: 'getPackagesFull' });
+  let tbody = document.querySelector('#packagesTable tbody');
+  tbody.innerHTML = '';
+  if (res.packages) {
+    res.packages.forEach(p => {
+      tbody.innerHTML += `<tr>
+        <td contenteditable="true" onblur="updatePackageCell(${p.row}, 'name', this.textContent)">${p.name}</td>
+        <td contenteditable="true" onblur="updatePackageCell(${p.row}, 'max', this.textContent)">${p.max}</td>
+        <td contenteditable="true" onblur="updatePackageCell(${p.row}, 'price', this.textContent)">${p.price}</td>
+        <td><button class="btn btn-danger" onclick="deletePackage(${p.row})">حذف</button></td>
+      </tr>`;
+    });
+  }
+}
+
+async function updatePackageCell(row, field, value) {
+  // نجلب الصف الكامل ثم نرسل التحديث
+  let res = await apiCall({ action: 'getPackagesFull' });
+  let pkg = res.packages.find(p => p.row == row);
+  if (!pkg) return;
+  pkg[field] = isNaN(value) ? value : Number(value);
+  await apiCall({ action: 'updatePackage', data: JSON.stringify({row, name: pkg.name, max: pkg.max, price: pkg.price, features: pkg.features}) });
+}
+
+async function openAddPackage() {
+  let name = prompt('اسم الباقة:');
+  if (!name) return;
+  let max = prompt('الحد الأقصى للطلاب:');
+  let price = prompt('السعر السنوي:');
+  if (name && max && price) {
+    await apiCall({ action: 'addPackage', data: JSON.stringify({name, max: Number(max), price: Number(price)}) });
+    loadPackages();
+  }
+}
+
+async function deletePackage(row) {
+  if (confirm('حذف الباقة؟')) {
+    await apiCall({ action: 'deletePackage', row: row });
+    loadPackages();
+  }
+}
+
+// ========== الاشتراكات ==========
+async function loadSubscriptions() {
+  let res = await apiCall({ action: 'getSchools' });
+  let tbody = document.querySelector('#subTable tbody');
+  tbody.innerHTML = '';
+  if (res.schools) {
+    res.schools.forEach(s => {
+      tbody.innerHTML += `<tr>
+        <td>${s.name}</td><td>${s.code}</td><td>${s.package}</td>
+        <td>${s.subStart || '-'}</td><td>${s.subEnd || '-'}</td>
+        <td>${s.status === 'active' ? 'نشط' : 'متوقف'}</td>
+        <td>
+          <button class="btn btn-success" onclick="renewSub('${s.code}')">تجديد</button>
+          <button class="btn btn-danger" onclick="cancelSub('${s.code}')">إلغاء</button>
+        </td>
+      </tr>`;
+    });
+  }
+}
+
+async function renewSub(code) {
+  let months = prompt('عدد شهور التجديد:', '12');
+  if (months && !isNaN(months)) {
+    let res = await apiCall({ action: 'renewSubscription', data: JSON.stringify({code, months: Number(months)}) });
+    if (res.success) { alert('تم التجديد'); loadSubscriptions(); }
+  }
+}
+async function cancelSub(code) {
+  if (confirm('إلغاء الاشتراك؟')) {
+    let res = await apiCall({ action: 'cancelSubscription', code: code });
+    if (res.success) { alert('تم الإلغاء'); loadSubscriptions(); }
+  }
+}
+
+// دالة تسجيل الخروج
+function logout() {
+  localStorage.clear();
+  window.location.href = 'login.html';
+}
+
+// تحميل البيانات الافتراضية
+loadSchools();
+loadPackagesIntoSelect();
+</script>
+</body>
+</html>
