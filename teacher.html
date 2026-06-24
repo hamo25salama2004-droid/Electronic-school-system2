@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>لوحة تحكم المعلم</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .teacher-wrapper { display: flex; min-height: 100vh; background: #f0f2f5; }
+    .sidebar {
+      width: 250px; background: #1e3c72; color: white;
+      padding: 20px 0; display: flex; flex-direction: column;
+    }
+    .sidebar h3 { text-align: center; margin-bottom: 20px; font-size: 20px; }
+    .sidebar a {
+      color: #ccc; text-decoration: none; padding: 12px 20px;
+      margin: 5px 0; display: block; transition: 0.3s;
+      border-right: 4px solid transparent;
+    }
+    .sidebar a:hover, .sidebar a.active {
+      background: #2a5298; color: white; border-right-color: #ffcc00;
+    }
+    .content { flex: 1; padding: 25px; overflow-y: auto; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .card {
+      background: white; border-radius: 12px; padding: 25px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px;
+    }
+    .btn {
+      background: #2a5298; color: white; border: none;
+      padding: 8px 18px; border-radius: 8px; cursor: pointer;
+      font-size: 14px; margin: 5px;
+    }
+    .btn-danger { background: #e74c3c; }
+    .btn-success { background: #27ae60; }
+    .btn-warning { background: #f39c12; color: white; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; }
+    th { background: #f8f9fa; font-weight: 600; }
+    .modal {
+      display: none; position: fixed; z-index: 1000;
+      left:0; top:0; width:100%; height:100%; background: rgba(0,0,0,0.4);
+    }
+    .modal-content {
+      background: white; margin: 5% auto; padding: 25px;
+      border-radius: 12px; width: 90%; max-width: 600px;
+      max-height: 80vh; overflow-y: auto;
+    }
+    input, select, textarea {
+      width: 100%; padding: 10px; margin: 10px 0;
+      border-radius: 8px; border: 1px solid #ddd;
+    }
+    .flex-row { display: flex; gap: 15px; flex-wrap: wrap; }
+    .flex-row > * { flex: 1 1 200px; }
+    .question-block {
+      background: #f8f9fa; border-radius: 8px; padding: 15px; margin: 10px 0;
+      border: 1px solid #ddd;
+    }
+    .lock-icon { cursor: pointer; font-size: 18px; }
+  </style>
+</head>
+<body>
+<div class="teacher-wrapper">
+  <div class="sidebar">
+    <h3>👨‍🏫 <span id="teacherNameDisplay">معلم</span></h3>
+    <a href="#" class="tab-link active" data-tab="dashboard">📊 الرئيسية</a>
+    <a href="#" class="tab-link" data-tab="materials">📚 المواد التعليمية</a>
+    <a href="#" class="tab-link" data-tab="exams">📝 الاختبارات</a>
+    <a href="#" class="tab-link" data-tab="submissions">📋 تقديمات الطلاب</a>
+    <a href="#" onclick="logout()" style="margin-top: auto;">🚪 تسجيل الخروج</a>
+  </div>
+
+  <div class="content">
+    <!-- لوحة التحكم -->
+    <div id="dashboard" class="tab-content active">
+      <div class="card">
+        <h2>مرحباً، <span id="teacherName"></span></h2>
+        <p>الصفوف المسندة إليك: <strong id="teacherClasses"></strong></p>
+        <p>رمز المدرسة: <strong id="teacherSchoolCode"></strong></p>
+      </div>
+    </div>
+
+    <!-- المواد التعليمية -->
+    <div id="materials" class="tab-content">
+      <div class="card">
+        <h2>المواد التعليمية</h2>
+        <div class="flex-row">
+          <div>
+            <label>الصف</label>
+            <select id="matClass"><option value="1">الأول</option><option value="2">الثاني</option><option value="3">الثالث</option></select>
+          </div>
+          <div>
+            <label>الترم</label>
+            <select id="matTerm"><option value="1">الأول</option><option value="2">الثاني</option></select>
+          </div>
+        </div>
+        <button class="btn" onclick="openUploadMaterial()">➕ رفع ملف جديد</button>
+        <hr>
+        <h3>الملفات المرفوعة</h3>
+        <table id="materialsTable">
+          <thead><tr><th>الفصل</th><th>الملف</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- الاختبارات -->
+    <div id="exams" class="tab-content">
+      <div class="card">
+        <h2>الاختبارات</h2>
+        <div class="flex-row">
+          <div>
+            <label>الصف</label>
+            <select id="examClass"><option value="1">الأول</option><option value="2">الثاني</option><option value="3">الثالث</option></select>
+          </div>
+          <div>
+            <label>الترم</label>
+            <select id="examTerm"><option value="1">الأول</option><option value="2">الثاني</option></select>
+          </div>
+        </div>
+        <button class="btn" onclick="openCreateExam()">➕ إنشاء اختبار</button>
+        <hr>
+        <h3>قائمة الاختبارات</h3>
+        <table id="examsTable">
+          <thead><tr><th>العنوان</th><th>النوع</th><th>البداية</th><th>النهاية</th><th>المدة (دقيقة)</th><th>إظهار النتيجة</th><th>أسئلة</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- تقديمات الطلاب -->
+    <div id="submissions" class="tab-content">
+      <div class="card">
+        <h2>تقديمات الطلاب</h2>
+        <label>اختر الاختبار</label>
+        <select id="subExamSelect"><option value="">-- اختر --</option></select>
+        <button class="btn" onclick="loadSubmissions()">عرض التقديمات</button>
+        <hr>
+        <h3>الإجابات</h3>
+        <table id="submissionsTable">
+          <thead><tr><th>كود الطالب</th><th>الدرجة</th><th>تاريخ التسليم</th><th>تصحيح</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- مودال رفع مادة -->
+<div id="materialModal" class="modal">
+  <div class="modal-content">
+    <h3>رفع ملف تعليمي</h3>
+    <label>اسم المادة (يتم تعبئته تلقائياً من حسابك)</label>
+    <input type="text" id="matSubject" readonly>
+    <label>عنوان الفصل</label>
+    <input type="text" id="chapterTitle" placeholder="مثال: الفصل الأول - الجبر">
+    <label>رابط الملف (Google Drive)</label>
+    <input type="text" id="fileUrl" placeholder="https://drive.google.com/...">
+    <button class="btn" onclick="uploadMaterial()">رفع</button>
+    <button class="btn btn-danger" onclick="closeMaterialModal()">إلغاء</button>
+  </div>
+</div>
+
+<!-- مودال إنشاء اختبار وإضافة أسئلة -->
+<div id="examModal" class="modal">
+  <div class="modal-content">
+    <h3>إنشاء اختبار جديد</h3>
+    <div class="flex-row">
+      <div>
+        <label>عنوان الاختبار</label>
+        <input type="text" id="examTitle">
+      </div>
+      <div>
+        <label>نوع الاختبار</label>
+        <select id="examType"><option value="mcq">اختيار متعدد</option><option value="tf">صح وخطأ</option><option value="mixed">مختلط</option><option value="essay">مقالي</option></select>
+      </div>
+    </div>
+    <div class="flex-row">
+      <div>
+        <label>تاريخ ووقت البداية</label>
+        <input type="datetime-local" id="examStart">
+      </div>
+      <div>
+        <label>تاريخ ووقت النهاية</label>
+        <input type="datetime-local" id="examEnd">
+      </div>
+    </div>
+    <div class="flex-row">
+      <div>
+        <label>المدة (دقائق)</label>
+        <input type="number" id="examDuration" value="30" min="1">
+      </div>
+      <div>
+        <label>إظهار النتيجة مباشرة</label>
+        <select id="examShowResult"><option value="true">نعم</option><option value="false">لا</option></select>
+      </div>
+    </div>
+    <hr>
+    <h4>إضافة سؤال</h4>
+    <div id="questionsContainer"></div>
+    <button class="btn" onclick="addQuestionField()">➕ إضافة سؤال</button>
+    <br><br>
+    <button class="btn btn-success" onclick="saveExam()">حفظ الاختبار بالأسئلة</button>
+    <button class="btn btn-danger" onclick="closeExamModal()">إلغاء</button>
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script>
+// التحقق من الجلسة
+if (!localStorage.getItem('token') || localStorage.getItem('role') !== 'teacher') {
+  window.location.href = 'login.html';
+}
+const teacherCode = localStorage.getItem('code');
+const teacherName = localStorage.getItem('teacherName');
+const schoolCode = localStorage.getItem('school_code');
+document.getElementById('teacherNameDisplay').textContent = teacherName;
+document.getElementById('teacherName').textContent = teacherName;
+document.getElementById('teacherSchoolCode').textContent = schoolCode;
+
+// التنقل بين التبويبات
+document.querySelectorAll('.tab-link').forEach(link => {
+  link.addEventListener('click', function(e) {
+    e.preventDefault();
+    document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
+    this.classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById(this.dataset.tab).classList.add('active');
+    const tab = this.dataset.tab;
+    if (tab === 'materials') loadMaterials();
+    else if (tab === 'exams') loadExams();
+    else if (tab === 'submissions') loadExamOptions();
+  });
+});
+
+// ====================== مواد تعليمية ======================
+async function loadTeacherInfo() {
+  const res = await apiCall({ action: 'getTeacherClasses', teacher_code: teacherCode });
+  if (res.classes) {
+    document.getElementById('teacherClasses').textContent = res.classes.join('، ');
+    // populate matClass and examClass with only assigned classes later if needed
+  }
+}
+loadTeacherInfo();
+
+async function loadMaterials() {
+  const classNum = document.getElementById('matClass').value;
+  const term = document.getElementById('matTerm').value;
+  const res = await apiCall({ action: 'getSubjectsMaterials', teacher_code: teacherCode, class: classNum, term: term });
+  const tbody = document.querySelector('#materialsTable tbody');
+  tbody.innerHTML = '';
+  if (res.materials) {
+    res.materials.forEach(m => {
+      tbody.innerHTML += `<tr>
+        <td>${m.chapter_title}</td>
+        <td><a href="${m.file_url}" target="_blank">فتح</a></td>
+        <td>${m.is_locked ? '🔒 مقفل' : '🔓 مفتوح'}</td>
+        <td>
+          <button class="btn" onclick="toggleLock(${m.id}, ${!m.is_locked})">
+            ${m.is_locked ? 'فتح' : 'قفل'}
+          </button>
+        </td>
+      </tr>`;
+    });
+  }
+}
+
+function openUploadMaterial() {
+  document.getElementById('matSubject').value = ''; // can be retrieved from teacher info
+  document.getElementById('chapterTitle').value = '';
+  document.getElementById('fileUrl').value = '';
+  document.getElementById('materialModal').style.display = 'block';
+  // set subject name
+  apiCall({ action: 'getTeacherClasses', teacher_code: teacherCode }).then(res => {
+    document.getElementById('matSubject').value = res.name + ' - ' + (res.classes ? res.classes.join(',') : '');
+  });
+}
+
+async function uploadMaterial() {
+  const data = {
+    teacher_code: teacherCode,
+    subject_name: document.getElementById('matSubject').value,
+    class: parseInt(document.getElementById('matClass').value),
+    term: parseInt(document.getElementById('matTerm').value),
+    chapter_title: document.getElementById('chapterTitle').value,
+    file_url: document.getElementById('fileUrl').value
+  };
+  if (!data.chapter_title || !data.file_url) return alert('جميع الحقول مطلوبة');
+  await apiCall({ action: 'uploadMaterial', data: JSON.stringify(data) });
+  alert('تم الرفع');
+  closeMaterialModal();
+  loadMaterials();
+}
+
+async function toggleLock(materialId, lock) {
+  await apiCall({ action: 'toggleLockMaterial', material_id: materialId, lock: lock ? 'true' : 'false' });
+  loadMaterials();
+}
+
+function closeMaterialModal() {
+  document.getElementById('materialModal').style.display = 'none';
+}
+
+// ====================== الاختبارات ======================
+async function loadExams() {
+  const classNum = document.getElementById('examClass').value;
+  const term = document.getElementById('examTerm').value;
+  const res = await apiCall({ action: 'getExams', teacher_code: teacherCode, class: classNum, term: term });
+  const tbody = document.querySelector('#examsTable tbody');
+  tbody.innerHTML = '';
+  if (res.exams) {
+    res.exams.forEach(ex => {
+      tbody.innerHTML += `<tr>
+        <td>${ex.title}</td>
+        <td>${ex.type}</td>
+        <td>${new Date(ex.start).toLocaleString('ar-EG')}</td>
+        <td>${new Date(ex.end).toLocaleString('ar-EG')}</td>
+        <td>${ex.duration}</td>
+        <td>${ex.show_result === 'TRUE' ? 'نعم' : 'لا'}</td>
+        <td><button class="btn" onclick="viewExamQuestions(${ex.id})">عرض</button></td>
+      </tr>`;
+    });
+  }
+}
+
+function openCreateExam() {
+  document.getElementById('examTitle').value = '';
+  document.getElementById('examType').value = 'mcq';
+  document.getElementById('examStart').value = '';
+  document.getElementById('examEnd').value = '';
+  document.getElementById('examDuration').value = 30;
+  document.getElementById('examShowResult').value = 'true';
+  document.getElementById('questionsContainer').innerHTML = '';
+  addQuestionField(); // start with one question
+  document.getElementById('examModal').style.display = 'block';
+}
+
+function addQuestionField() {
+  const container = document.getElementById('questionsContainer');
+  const div = document.createElement('div');
+  div.className = 'question-block';
+  div.innerHTML = `
+    <label>نص السؤال</label>
+    <input type="text" class="q-text" placeholder="اكتب السؤال">
+    <label>نوع السؤال</label>
+    <select class="q-type" onchange="toggleOptions(this)">
+      <option value="mcq">اختيار متعدد</option>
+      <option value="tf">صح وخطأ</option>
+      <option value="essay">مقالي</option>
+    </select>
+    <div class="q-options" style="display:block;">
+      <label>الخيارات (مفصولة بفاصلة)</label>
+      <input type="text" class="q-opts" placeholder="أ,ب,ج,د">
+      <label>الإجابة الصحيحة</label>
+      <input type="text" class="q-answer" placeholder="أ">
+    </div>
+    <label>الدرجة</label>
+    <input type="number" class="q-points" value="1" min="1">
+  `;
+  container.appendChild(div);
+}
+
+function toggleOptions(select) {
+  const block = select.closest('.question-block');
+  const optionsDiv = block.querySelector('.q-options');
+  if (select.value === 'essay') {
+    optionsDiv.style.display = 'none';
+  } else {
+    optionsDiv.style.display = 'block';
+  }
+}
+
+async function saveExam() {
+  const classNum = document.getElementById('examClass').value;
+  const term = document.getElementById('examTerm').value;
+  const examData = {
+    school_code: schoolCode,
+    teacher_code: teacherCode,
+    subject: '', // can be added from teacher info
+    class: classNum,
+    term: term,
+    title: document.getElementById('examTitle').value,
+    exam_type: document.getElementById('examType').value,
+    start_time: document.getElementById('examStart').value,
+    end_time: document.getElementById('examEnd').value,
+    duration_min: parseInt(document.getElementById('examDuration').value),
+    show_result: document.getElementById('examShowResult').value === 'true'
+  };
+  if (!examData.title || !examData.start_time || !examData.end_time) return alert('املأ بيانات الاختبار');
+  
+  const createRes = await apiCall({ action: 'createExam', data: JSON.stringify(examData) });
+  if (!createRes.success) return alert('فشل إنشاء الاختبار');
+
+  // Now need the exam ID; we have to retrieve it (not returned directly, so we fetch latest exam)
+  const examsRes = await apiCall({ action: 'getExams', teacher_code: teacherCode, class: classNum, term: term });
+  const latestExam = examsRes.exams[examsRes.exams.length-1];
+  if (!latestExam) return alert('خطأ في جلب معرف الاختبار');
+
+  const questionBlocks = document.querySelectorAll('.question-block');
+  for (let block of questionBlocks) {
+    const qText = block.querySelector('.q-text').value;
+    const qType = block.querySelector('.q-type').value;
+    const qPoints = parseInt(block.querySelector('.q-points').value) || 1;
+    let optionsJson = '';
+    let correctAnswer = '';
+    if (qType !== 'essay') {
+      const opts = block.querySelector('.q-opts').value.split(',').map(o => o.trim());
+      optionsJson = JSON.stringify(opts);
+      correctAnswer = block.querySelector('.q-answer').value.trim();
+    }
+    const questionData = {
+      exam_id: latestExam.id,
+      question_text: qText,
+      type: qType,
+      options_json: optionsJson,
+      correct_answer: correctAnswer,
+      points: qPoints
+    };
+    await apiCall({ action: 'addExamQuestion', data: JSON.stringify(questionData) });
+  }
+  alert('تم إنشاء الاختبار مع الأسئلة');
+  closeExamModal();
+  loadExams();
+}
+
+async function viewExamQuestions(examId) {
+  const res = await apiCall({ action: 'getExamQuestions', exam_id: examId, includeAnswers: 'true' });
+  if (res.questions) {
+    let msg = '';
+    res.questions.forEach((q, i) => {
+      msg += `${i+1}. ${q.text} (${q.type}) - الإجابة: ${q.correct_answer || 'مقالي'}\n`;
+    });
+    alert(msg || 'لا توجد أسئلة');
+  }
+}
+
+function closeExamModal() {
+  document.getElementById('examModal').style.display = 'none';
+}
+
+// ====================== التقديمات ======================
+async function loadExamOptions() {
+  const select = document.getElementById('subExamSelect');
+  select.innerHTML = '<option value="">-- اختر --</option>';
+  // fetch all exams for teacher
+  for (let cls = 1; cls <= 3; cls++) {
+    for (let term = 1; term <= 2; term++) {
+      const res = await apiCall({ action: 'getExams', teacher_code: teacherCode, class: cls, term: term });
+      if (res.exams) {
+        res.exams.forEach(ex => {
+          const opt = document.createElement('option');
+          opt.value = ex.id;
+          opt.textContent = `${ex.title} (صف ${cls} ترم ${term})`;
+          select.appendChild(opt);
+        });
+      }
+    }
+  }
+}
+
+async function loadSubmissions() {
+  const examId = document.getElementById('subExamSelect').value;
+  if (!examId) return alert('اختر اختباراً');
+  const res = await apiCall({ action: 'getExamSubmissions', exam_id: parseInt(examId) });
+  const tbody = document.querySelector('#submissionsTable tbody');
+  tbody.innerHTML = '';
+  if (res.submissions) {
+    res.submissions.forEach(sub => {
+      tbody.innerHTML += `<tr>
+        <td>${sub.student_code}</td>
+        <td>${sub.score !== undefined ? sub.score : 'لم يصحح'}</td>
+        <td>${new Date(sub.submitted).toLocaleString('ar-EG')}</td>
+        <td>
+          <button class="btn" onclick="viewAnswers(${sub.id}, '${sub.student_code}')">عرض الإجابات</button>
+          <input type="number" id="score_${sub.id}" placeholder="درجة" style="width:80px; display:inline;">
+          <button class="btn btn-success" onclick="gradeSubmission(${sub.id})">تقييم</button>
+        </td>
+      </tr>`;
+    });
+  }
+}
+
+async function viewAnswers(subId, studentCode) {
+  const res = await apiCall({ action: 'getExamSubmissions', exam_id: parseInt(document.getElementById('subExamSelect').value) });
+  const sub = res.submissions.find(s => s.id === subId);
+  if (sub) {
+    let msg = `إجابات الطالب ${studentCode}:\n`;
+    sub.answers.forEach((a, i) => {
+      msg += `${i+1}. السؤال ${a.question_id}: ${a.answer}\n`;
+    });
+    alert(msg);
+  }
+}
+
+async function gradeSubmission(subId) {
+  const score = document.getElementById(`score_${subId}`).value;
+  if (!score) return alert('أدخل الدرجة');
+  await apiCall({ action: 'gradeSubmission', submission_id: subId, score: parseInt(score) });
+  alert('تم التقييم');
+  loadSubmissions();
+}
+
+function logout() {
+  localStorage.clear();
+  window.location.href = 'login.html';
+}
+</script>
+</body>
+</html>
