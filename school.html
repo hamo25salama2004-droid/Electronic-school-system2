@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>لوحة تحكم مدير المدرسة</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* تنسيقات داخلية إضافية */
+    .school-wrapper { display: flex; min-height: 100vh; background: #f0f2f5; }
+    .sidebar {
+      width: 260px; background: #1e3c72; color: white;
+      padding: 20px 0; display: flex; flex-direction: column;
+    }
+    .sidebar h3 { text-align: center; margin-bottom: 20px; font-size: 22px; }
+    .sidebar a {
+      color: #ccc; text-decoration: none; padding: 12px 20px;
+      margin: 5px 0; display: block; transition: 0.3s;
+      border-right: 4px solid transparent;
+    }
+    .sidebar a:hover, .sidebar a.active {
+      background: #2a5298; color: white; border-right-color: #ffcc00;
+    }
+    .content { flex: 1; padding: 25px; overflow-y: auto; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .card {
+      background: white; border-radius: 12px; padding: 25px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px;
+    }
+    .btn {
+      background: #2a5298; color: white; border: none;
+      padding: 10px 20px; border-radius: 8px; cursor: pointer;
+      font-size: 14px; margin: 5px;
+    }
+    .btn-danger { background: #e74c3c; }
+    .btn-success { background: #27ae60; }
+    .btn-warning { background: #f39c12; color: white; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; }
+    th { background: #f8f9fa; font-weight: 600; }
+    .modal {
+      display: none; position: fixed; z-index: 1000;
+      left:0; top:0; width:100%; height:100%; background: rgba(0,0,0,0.4);
+    }
+    .modal-content {
+      background: white; margin: 5% auto; padding: 25px;
+      border-radius: 12px; width: 90%; max-width: 500px;
+      max-height: 80vh; overflow-y: auto;
+    }
+    input, select, textarea {
+      width: 100%; padding: 10px; margin: 10px 0;
+      border-radius: 8px; border: 1px solid #ddd;
+    }
+    .flex-row { display: flex; gap: 15px; flex-wrap: wrap; }
+    .flex-row > * { flex: 1 1 200px; }
+  </style>
+</head>
+<body>
+<div class="school-wrapper">
+  <div class="sidebar">
+    <h3>🏫 <span id="schoolNameDisplay">مدرستي</span></h3>
+    <a href="#" class="tab-link active" data-tab="dashboard">📊 لوحة التحكم</a>
+    <a href="#" class="tab-link" data-tab="students">👨‍🎓 الطلاب</a>
+    <a href="#" class="tab-link" data-tab="teachers">👩‍🏫 المعلمين</a>
+    <a href="#" class="tab-link" data-tab="schedules">📅 الجداول</a>
+    <a href="#" class="tab-link" data-tab="seating">🪑 لجان الامتحانات</a>
+    <a href="#" class="tab-link" data-tab="terms">⏳ الترم الدراسي</a>
+    <a href="#" onclick="logout()" style="margin-top: auto;">🚪 تسجيل الخروج</a>
+  </div>
+
+  <div class="content">
+    <!-- لوحة التحكم -->
+    <div id="dashboard" class="tab-content active">
+      <div class="card">
+        <h2>لوحة التحكم</h2>
+        <div class="flex-row">
+          <div class="card" style="background:#e8f5e9"><strong>عدد الطلاب</strong><h3 id="totalStudents">0</h3></div>
+          <div class="card" style="background:#e3f2fd"><strong>عدد المعلمين</strong><h3 id="totalTeachers">0</h3></div>
+          <div class="card" style="background:#fff3e0"><strong>حالة الاشتراك</strong><h3 id="subStatus">-</h3></div>
+          <div class="card" style="background:#fce4ec"><strong>تاريخ الانتهاء</strong><h3 id="subEnd">-</h3></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- الطلاب -->
+    <div id="students" class="tab-content">
+      <div class="card">
+        <h2>قائمة الطلاب</h2>
+        <button class="btn" onclick="openAddStudent()">➕ إضافة طالب</button>
+        <table id="studentsTable">
+          <thead><tr><th>الكود</th><th>الاسم</th><th>الصف</th><th>الترم</th><th>الهاتف</th><th>إجراءات</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- المعلمين -->
+    <div id="teachers" class="tab-content">
+      <div class="card">
+        <h2>قائمة المعلمين</h2>
+        <button class="btn" onclick="openAddTeacher()">➕ إضافة معلم</button>
+        <table id="teachersTable">
+          <thead><tr><th>الكود</th><th>الاسم</th><th>المادة</th><th>الهاتف</th><th>الصفوف</th><th>إجراءات</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- الجداول -->
+    <div id="schedules" class="tab-content">
+      <div class="card">
+        <h2>رفع الجداول</h2>
+        <div class="flex-row">
+          <div>
+            <label>الصف</label>
+            <select id="schedClass"><option value="1">الأول</option><option value="2">الثاني</option><option value="3">الثالث</option></select>
+          </div>
+          <div>
+            <label>الترم</label>
+            <select id="schedTerm"><option value="1">الأول</option><option value="2">الثاني</option></select>
+          </div>
+        </div>
+        <label>رابط ملف جدول الحصص (Google Drive)</label>
+        <input type="text" id="scheduleFileUrl" placeholder="https://drive.google.com/...">
+        <label>رابط ملف جدول الامتحانات (اختياري)</label>
+        <input type="text" id="examScheduleUrl" placeholder="https://drive.google.com/...">
+        <button class="btn" onclick="uploadSchedule()">رفع</button>
+        <hr>
+        <h3>الجداول المرفوعة</h3>
+        <table id="schedulesTable">
+          <thead><tr><th>الصف</th><th>الترم</th><th>جدول الحصص</th><th>جدول الامتحان</th><th>تاريخ الرفع</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- لجان الامتحانات -->
+    <div id="seating" class="tab-content">
+      <div class="card">
+        <h2>رفع لجان الامتحانات (رقم الجلوس)</h2>
+        <div class="flex-row">
+          <div>
+            <label>الصف</label>
+            <select id="seatClass"><option value="1">الأول</option><option value="2">الثاني</option><option value="3">الثالث</option></select>
+          </div>
+          <div>
+            <label>الترم</label>
+            <select id="seatTerm"><option value="1">الأول</option><option value="2">الثاني</option></select>
+          </div>
+        </div>
+        <p>الصق بيانات CSV (كود الطالب, رقم الجلوس, اللجنة) كل سطر طالب:</p>
+        <textarea id="seatingData" rows="5" placeholder="ST-ABC123,45,لجنة أ
+ST-DEF456,12,لجنة ب"></textarea>
+        <button class="btn" onclick="uploadSeating()">رفع</button>
+        <hr>
+        <h3>بيانات اللجان الحالية</h3>
+        <table id="seatingTable">
+          <thead><tr><th>كود الطالب</th><th>رقم الجلوس</th><th>اللجنة</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- الترم الدراسي -->
+    <div id="terms" class="tab-content">
+      <div class="card">
+        <h2>تحديد مواعيد الترمين</h2>
+        <div class="flex-row">
+          <div>
+            <label>بداية الترم الأول</label>
+            <input type="date" id="term1_start">
+          </div>
+          <div>
+            <label>نهاية الترم الأول</label>
+            <input type="date" id="term1_end">
+          </div>
+        </div>
+        <div class="flex-row">
+          <div>
+            <label>بداية الترم الثاني</label>
+            <input type="date" id="term2_start">
+          </div>
+          <div>
+            <label>نهاية الترم الثاني</label>
+            <input type="date" id="term2_end">
+          </div>
+        </div>
+        <button class="btn" onclick="saveTermDates()">حفظ التواريخ</button>
+        <hr>
+        <p><strong>التواريخ الحالية:</strong> <span id="currentTermDates">لم تحدد بعد</span></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- مودال طالب -->
+<div id="studentModal" class="modal">
+  <div class="modal-content">
+    <h3 id="studentModalTitle">إضافة طالب</h3>
+    <input type="hidden" id="editStudentCode">
+    <label>الاسم الكامل</label>
+    <input type="text" id="studentName">
+    <label>تاريخ الميلاد</label>
+    <input type="date" id="studentBirth">
+    <label>الجنس</label>
+    <select id="studentGender"><option value="ذكر">ذكر</option><option value="أنثى">أنثى</option></select>
+    <label>رقم الهاتف</label>
+    <input type="text" id="studentPhone">
+    <label>العنوان</label>
+    <input type="text" id="studentAddress">
+    <button class="btn" onclick="saveStudent()">حفظ</button>
+    <button class="btn btn-danger" onclick="closeStudentModal()">إلغاء</button>
+  </div>
+</div>
+
+<!-- مودال معلم -->
+<div id="teacherModal" class="modal">
+  <div class="modal-content">
+    <h3 id="teacherModalTitle">إضافة معلم</h3>
+    <input type="hidden" id="editTeacherCode">
+    <label>الاسم الكامل</label>
+    <input type="text" id="teacherName">
+    <label>المادة</label>
+    <input type="text" id="teacherSubject">
+    <label>رقم الهاتف</label>
+    <input type="text" id="teacherPhone">
+    <label>البريد الإلكتروني</label>
+    <input type="email" id="teacherEmail">
+    <label>الصفوف (مفصولة بفاصلة مثلاً 1,2)</label>
+    <input type="text" id="teacherClasses">
+    <button class="btn" onclick="saveTeacher()">حفظ</button>
+    <button class="btn btn-danger" onclick="closeTeacherModal()">إلغاء</button>
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script>
+// التحقق من الجلسة
+if (!localStorage.getItem('token') || localStorage.getItem('role') !== 'school') {
+  window.location.href = 'login.html';
+}
+const schoolCode = localStorage.getItem('code');
+document.getElementById('schoolNameDisplay').textContent = localStorage.getItem('schoolName') || 'مدرستي';
+
+// التنقل بين التبويبات
+document.querySelectorAll('.tab-link').forEach(link => {
+  link.addEventListener('click', function(e) {
+    e.preventDefault();
+    document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
+    this.classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById(this.dataset.tab).classList.add('active');
+    
+    const tab = this.dataset.tab;
+    if (tab === 'dashboard') loadDashboard();
+    else if (tab === 'students') loadStudents();
+    else if (tab === 'teachers') loadTeachers();
+    else if (tab === 'schedules') loadSchedules();
+    else if (tab === 'seating') loadSeating();
+    else if (tab === 'terms') loadTermDates();
+  });
+});
+
+// ====================== لوحة التحكم ======================
+async function loadDashboard() {
+  const [studentsRes, teachersRes, schoolRes] = await Promise.all([
+    apiCall({ action: 'getSchoolStudents', school_code: schoolCode }),
+    apiCall({ action: 'getSchoolTeachers', school_code: schoolCode }),
+    apiCall({ action: 'getSchoolData', code: schoolCode })
+  ]);
+  document.getElementById('totalStudents').textContent = studentsRes.students ? studentsRes.students.length : 0;
+  document.getElementById('totalTeachers').textContent = teachersRes.teachers ? teachersRes.teachers.length : 0;
+  if (schoolRes.school) {
+    document.getElementById('subStatus').textContent = schoolRes.school.status === 'active' ? 'نشط' : 'متوقف';
+    document.getElementById('subEnd').textContent = schoolRes.school.subEnd || 'غير محدد';
+  }
+}
+
+// ====================== الطلاب ======================
+async function loadStudents() {
+  const res = await apiCall({ action: 'getSchoolStudents', school_code: schoolCode });
+  const tbody = document.querySelector('#studentsTable tbody');
+  tbody.innerHTML = '';
+  if (res.students) {
+    res.students.forEach(s => {
+      tbody.innerHTML += `<tr>
+        <td>${s.code}</td>
+        <td>${s.name}</td>
+        <td>${s.class}</td>
+        <td>${s.term}</td>
+        <td>${s.phone || '-'}</td>
+        <td>
+          <button class="btn" onclick="editStudent('${s.code}')">✏️</button>
+          <button class="btn btn-danger" onclick="deleteStudent('${s.code}')">🗑️</button>
+          <button class="btn btn-success" onclick="moveStudent('${s.code}')">⬆️ نقل</button>
+        </td>
+      </tr>`;
+    });
+  }
+}
+
+function openAddStudent() {
+  document.getElementById('studentModalTitle').textContent = 'إضافة طالب';
+  document.getElementById('editStudentCode').value = '';
+  document.getElementById('studentName').value = '';
+  document.getElementById('studentBirth').value = '';
+  document.getElementById('studentGender').value = 'ذكر';
+  document.getElementById('studentPhone').value = '';
+  document.getElementById('studentAddress').value = '';
+  document.getElementById('studentModal').style.display = 'block';
+}
+
+async function editStudent(code) {
+  const res = await apiCall({ action: 'getSchoolStudents', school_code: schoolCode });
+  const student = res.students.find(s => s.code === code);
+  if (!student) return;
+  document.getElementById('studentModalTitle').textContent = 'تعديل طالب';
+  document.getElementById('editStudentCode').value = student.code;
+  document.getElementById('studentName').value = student.name;
+  document.getElementById('studentBirth').value = student.birthdate || '';
+  document.getElementById('studentGender').value = student.gender || 'ذكر';
+  document.getElementById('studentPhone').value = student.phone || '';
+  document.getElementById('studentAddress').value = student.address || '';
+  document.getElementById('studentModal').style.display = 'block';
+}
+
+async function saveStudent() {
+  const code = document.getElementById('editStudentCode').value;
+  const data = {
+    school_code: schoolCode,
+    name: document.getElementById('studentName').value,
+    birthdate: document.getElementById('studentBirth').value,
+    gender: document.getElementById('studentGender').value,
+    phone: document.getElementById('studentPhone').value,
+    address: document.getElementById('studentAddress').value
+  };
+  if (!data.name) return alert('الاسم مطلوب');
+
+  if (code) {
+    data.student_code = code;
+    await apiCall({ action: 'updateStudent', data: JSON.stringify(data) });
+  } else {
+    const res = await apiCall({ action: 'addStudent', data: JSON.stringify(data) });
+    if (res.success) alert('تمت الإضافة والكود: ' + res.code);
+  }
+  closeStudentModal();
+  loadStudents();
+}
+
+async function deleteStudent(code) {
+  if (confirm('حذف الطالب؟')) {
+    await apiCall({ action: 'deleteStudent', student_code: code });
+    loadStudents();
+  }
+}
+
+async function moveStudent(code) {
+  const res = await apiCall({ action: 'moveStudentToNextClass', student_code: code });
+  if (res.success) {
+    alert(`تم النقل إلى الصف ${res.newClass}`);
+    loadStudents();
+  } else {
+    alert(res.error || 'لا يمكن النقل');
+  }
+}
+
+function closeStudentModal() {
+  document.getElementById('studentModal').style.display = 'none';
+}
+
+// ====================== المعلمين ======================
+async function loadTeachers() {
+  const res = await apiCall({ action: 'getSchoolTeachers', school_code: schoolCode });
+  const tbody = document.querySelector('#teachersTable tbody');
+  tbody.innerHTML = '';
+  if (res.teachers) {
+    res.teachers.forEach(t => {
+      tbody.innerHTML += `<tr>
+        <td>${t.code}</td>
+        <td>${t.name}</td>
+        <td>${t.subject || '-'}</td>
+        <td>${t.phone || '-'}</td>
+        <td>${t.assigned_classes || '-'}</td>
+        <td>
+          <button class="btn" onclick="editTeacher('${t.code}')">✏️</button>
+          <button class="btn btn-danger" onclick="deleteTeacher('${t.code}')">🗑️</button>
+        </td>
+      </tr>`;
+    });
+  }
+}
+
+function openAddTeacher() {
+  document.getElementById('teacherModalTitle').textContent = 'إضافة معلم';
+  document.getElementById('editTeacherCode').value = '';
+  document.getElementById('teacherName').value = '';
+  document.getElementById('teacherSubject').value = '';
+  document.getElementById('teacherPhone').value = '';
+  document.getElementById('teacherEmail').value = '';
+  document.getElementById('teacherClasses').value = '';
+  document.getElementById('teacherModal').style.display = 'block';
+}
+
+async function editTeacher(code) {
+  const res = await apiCall({ action: 'getSchoolTeachers', school_code: schoolCode });
+  const t = res.teachers.find(t => t.code === code);
+  if (!t) return;
+  document.getElementById('teacherModalTitle').textContent = 'تعديل معلم';
+  document.getElementById('editTeacherCode').value = t.code;
+  document.getElementById('teacherName').value = t.name;
+  document.getElementById('teacherSubject').value = t.subject || '';
+  document.getElementById('teacherPhone').value = t.phone || '';
+  document.getElementById('teacherEmail').value = t.email || '';
+  document.getElementById('teacherClasses').value = t.assigned_classes || '';
+  document.getElementById('teacherModal').style.display = 'block';
+}
+
+async function saveTeacher() {
+  const code = document.getElementById('editTeacherCode').value;
+  const data = {
+    school_code: schoolCode,
+    name: document.getElementById('teacherName').value,
+    subject: document.getElementById('teacherSubject').value,
+    phone: document.getElementById('teacherPhone').value,
+    email: document.getElementById('teacherEmail').value,
+    assigned_classes: document.getElementById('teacherClasses').value
+  };
+  if (!data.name) return alert('الاسم مطلوب');
+
+  if (code) {
+    data.teacher_code = code;
+    await apiCall({ action: 'updateTeacher', data: JSON.stringify(data) });
+  } else {
+    const res = await apiCall({ action: 'addTeacher', data: JSON.stringify(data) });
+    if (res.success) alert('تمت الإضافة والكود: ' + res.code);
+  }
+  closeTeacherModal();
+  loadTeachers();
+}
+
+async function deleteTeacher(code) {
+  if (confirm('حذف المعلم؟')) {
+    await apiCall({ action: 'deleteTeacher', teacher_code: code });
+    loadTeachers();
+  }
+}
+
+function closeTeacherModal() {
+  document.getElementById('teacherModal').style.display = 'none';
+}
+
+// ====================== الجداول ======================
+async function uploadSchedule() {
+  const data = {
+    school_code: schoolCode,
+    class: document.getElementById('schedClass').value,
+    term: document.getElementById('schedTerm').value,
+    schedule_file_url: document.getElementById('scheduleFileUrl').value,
+    exam_schedule_url: document.getElementById('examScheduleUrl').value
+  };
+  if (!data.schedule_file_url) return alert('رابط جدول الحصص مطلوب');
+  await apiCall({ action: 'uploadSchedule', data: JSON.stringify(data) });
+  alert('تم الرفع');
+  loadSchedules();
+}
+
+async function loadSchedules() {
+  const tbody = document.querySelector('#schedulesTable tbody');
+  tbody.innerHTML = '';
+  for (let cls = 1; cls <= 3; cls++) {
+    for (let term = 1; term <= 2; term++) {
+      const res = await apiCall({ action: 'getSchedule', school_code: schoolCode, class: cls, term: term });
+      if (res.schedules) {
+        res.schedules.forEach(s => {
+          tbody.innerHTML += `<tr>
+            <td>${cls}</td><td>${term}</td>
+            <td><a href="${s.schedule_file}" target="_blank">فتح</a></td>
+            <td>${s.exam_schedule ? `<a href="${s.exam_schedule}" target="_blank">فتح</a>` : '-'}</td>
+            <td>${new Date(s.uploaded_at).toLocaleDateString('ar-EG')}</td>
+          </tr>`;
+        });
+      }
+    }
+  }
+}
+
+// ====================== لجان الامتحانات ======================
+async function uploadSeating() {
+  const classNum = document.getElementById('seatClass').value;
+  const term = document.getElementById('seatTerm').value;
+  const raw = document.getElementById('seatingData').value.trim();
+  if (!raw) return alert('أدخل البيانات');
+  const lines = raw.split('\n');
+  const rows = [];
+  for (let line of lines) {
+    const parts = line.split(',');
+    if (parts.length >= 3) {
+      rows.push({
+        student_code: parts[0].trim(),
+        seat_number: parts[1].trim(),
+        room: parts[2].trim()
+      });
+    }
+  }
+  const data = { school_code: schoolCode, class: classNum, term: term, rows: rows };
+  const res = await apiCall({ action: 'uploadSeating', data: JSON.stringify(data) });
+  if (res.success) alert(`تم رفع ${res.count} طالب`);
+  loadSeating();
+}
+
+async function loadSeating() {
+  // نعرض آخر لجان مرفوعة؟ سنستعرض كل الصفوف الممكنة
+  const tbody = document.querySelector('#seatingTable tbody');
+  tbody.innerHTML = 'غير متاح عرض شامل - استخدم صفحة الطالب';
+  // يمكن تحسينها بعرض بيانات الطلاب المسجلين في seating، لكن نكتفي بالتنبيه
+}
+
+// ====================== الترم الدراسي ======================
+async function loadTermDates() {
+  const res = await apiCall({ action: 'getTermDates', school_code: schoolCode });
+  if (res.term1_start) {
+    document.getElementById('term1_start').value = res.term1_start;
+    document.getElementById('term1_end').value = res.term1_end;
+    document.getElementById('term2_start').value = res.term2_start;
+    document.getElementById('term2_end').value = res.term2_end;
+    document.getElementById('currentTermDates').textContent = 
+      `الترم الأول: ${res.term1_start} - ${res.term1_end} | الترم الثاني: ${res.term2_start} - ${res.term2_end}`;
+  } else {
+    document.getElementById('currentTermDates').textContent = 'لم تحدد بعد';
+  }
+}
+
+async function saveTermDates() {
+  const data = {
+    school_code: schoolCode,
+    term1_start: document.getElementById('term1_start').value,
+    term1_end: document.getElementById('term1_end').value,
+    term2_start: document.getElementById('term2_start').value,
+    term2_end: document.getElementById('term2_end').value
+  };
+  await apiCall({ action: 'setTermDates', data: JSON.stringify(data) });
+  alert('تم الحفظ');
+  loadTermDates();
+}
+
+// ====================== عام ======================
+function logout() {
+  localStorage.clear();
+  window.location.href = 'login.html';
+}
+
+// تحميل أولي
+loadDashboard();
+</script>
+</body>
+</html>
