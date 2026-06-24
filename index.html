@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تسجيل الدخول - نظام إدارة المدارس</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="logo">📚 إدارة المدارس</div>
+      <h2>تسجيل الدخول</h2>
+      <form id="loginForm">
+        <div class="form-group">
+          <label>نوع المستخدم</label>
+          <select id="roleSelect" required>
+            <option value="">-- اختر --</option>
+            <option value="admin">الأدمن العام</option>
+            <option value="school">مدير المدرسة</option>
+            <option value="teacher">معلم</option>
+            <option value="student">طالب</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="usernameGroup" style="display:none;">
+          <label>اسم المستخدم</label>
+          <input type="text" id="username" placeholder="اسم المستخدم">
+        </div>
+
+        <div class="form-group">
+          <label id="codeLabel">الكود</label>
+          <input type="text" id="code" placeholder="أدخل الكود" required>
+        </div>
+
+        <div class="form-group" id="passwordGroup" style="display:none;">
+          <label>كلمة المرور</label>
+          <input type="password" id="password" placeholder="كلمة المرور">
+        </div>
+
+        <button type="submit" class="btn-login">دخول</button>
+        <div class="error-message" id="errorMsg"></div>
+      </form>
+    </div>
+  </div>
+
+  <script src="api.js"></script>
+  <script>
+    const roleSelect = document.getElementById('roleSelect');
+    const usernameGroup = document.getElementById('usernameGroup');
+    const passwordGroup = document.getElementById('passwordGroup');
+    const codeLabel = document.getElementById('codeLabel');
+    const codeInput = document.getElementById('code');
+    const errorMsg = document.getElementById('errorMsg');
+
+    // تعديل واجهة الحقول حسب النوع
+    roleSelect.addEventListener('change', function() {
+      const role = this.value;
+      usernameGroup.style.display = 'none';
+      passwordGroup.style.display = 'none';
+      codeLabel.textContent = 'الكود';
+      codeInput.placeholder = 'أدخل الكود';
+      codeInput.required = true;
+
+      if (role === 'admin') {
+        usernameGroup.style.display = 'block';
+        passwordGroup.style.display = 'block';
+        codeLabel.textContent = 'الكود (اختياري للإعدادات)';
+        codeInput.required = false;
+      } else if (role === 'school') {
+        // فقط الكود
+      } else if (role === 'teacher' || role === 'student') {
+        passwordGroup.style.display = 'block';
+        codeLabel.textContent = role === 'teacher' ? 'كود المعلم' : 'كود الطالب';
+        codeInput.placeholder = role === 'teacher' ? 'مثل TCH-XXXX' : 'مثل ST-XXXX';
+      }
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      errorMsg.textContent = '';
+      const role = roleSelect.value;
+      if (!role) {
+        errorMsg.textContent = 'الرجاء اختيار نوع المستخدم';
+        return;
+      }
+
+      let params = {};
+      if (role === 'admin') {
+        params.action = 'loginAdmin';
+        params.username = document.getElementById('username').value;
+        params.password = document.getElementById('password').value;
+      } else if (role === 'school') {
+        params.action = 'loginSchool';
+        params.code = document.getElementById('code').value;
+      } else if (role === 'teacher') {
+        params.action = 'loginTeacher';
+        params.code = document.getElementById('code').value;
+        params.password = document.getElementById('password').value;
+      } else if (role === 'student') {
+        params.action = 'loginStudent';
+        params.code = document.getElementById('code').value;
+        params.password = document.getElementById('password').value;
+      }
+
+      try {
+        const response = await apiCall(params);
+        if (response.success) {
+          // حفظ بيانات الجلسة
+          localStorage.setItem('role', response.role);
+          localStorage.setItem('token', response.token);
+          localStorage.setItem('code', response.code || '');
+          if (response.schoolName) localStorage.setItem('schoolName', response.schoolName);
+          if (response.teacherName) localStorage.setItem('teacherName', response.teacherName);
+          if (response.studentName) localStorage.setItem('studentName', response.studentName);
+          if (response.class) localStorage.setItem('class', response.class);
+          if (response.term) localStorage.setItem('term', response.term);
+          if (response.school_code) localStorage.setItem('school_code', response.school_code);
+
+          // توجيه للصفحة المناسبة
+          switch(response.role) {
+            case 'admin': window.location.href = 'admin.html'; break;
+            case 'school': window.location.href = 'school.html'; break;
+            case 'teacher': window.location.href = 'teacher.html'; break;
+            case 'student': window.location.href = 'student.html'; break;
+          }
+        } else {
+          errorMsg.textContent = response.message || 'فشل تسجيل الدخول';
+        }
+      } catch (err) {
+        errorMsg.textContent = 'خطأ في الاتصال بالخادم';
+      }
+    });
+  </script>
+</body>
+</html>
